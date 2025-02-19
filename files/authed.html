@@ -1,0 +1,129 @@
+<html>
+  <head>
+    <script>
+      // Set the date we're counting down to
+      var countDownDate = new Date("__REPLACED_DATE_HERE__").getTime();
+
+      function countdown() {
+        // Get today's date and time
+        var now = new Date().getTime();
+
+        // Find the distance between now and the count down date
+        var distance = countDownDate - now;
+
+        // Time calculations for days, hours, minutes and seconds
+        var hours = Math.floor(
+          (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+        );
+        var minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+        var seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+        // Display the result in the element with id="demo"
+        document.getElementById("countdown").innerHTML =
+          hours + " hours " + minutes + " mins " + seconds + " seconds ";
+
+        // If the count down is finished, write some text
+        if (distance < 0) {
+          clearInterval(x);
+          document.getElementById("countdown").innerHTML = "EXPIRED";
+        }
+      }
+
+      window.onload = countdown;
+      // Update the count down every 1 second
+      var x = setInterval(countdown, 1000);
+    </script>
+    <style>
+      @import url("https://fonts.googleapis.com/css?family=Poppins:100,200,300,400,500,600,700,800,900");
+
+      body {
+        font-family: "Poppins", sans-serif;
+        background: #000;
+        text-align: center;
+      }
+
+      #container {
+        width: 100%;
+        position: absolute;
+        top: 40%;
+        transform: translate(0%, -40%);
+      }
+
+      .content h2 {
+        margin: 0;
+        color: #fff;
+        position: absolute;
+        font-size: 4em;
+        width: 100%;
+      }
+
+      .content h2:nth-child(1) {
+        color: transparent;
+        -webkit-text-stroke: 2px #03a9f4;
+      }
+
+      .content h2:nth-child(2) {
+        color: #03a9f4;
+        animation: animate 4s ease-in-out infinite;
+      }
+
+      #message {
+        margin-top: 100px;
+        position: absolute;
+        color: #fff;
+        width: 100%;
+        line-height: 2.5em;
+      }
+
+      .grey {
+        color: #cacaca;
+      }
+
+      @keyframes animate {
+        0%,
+        100% {
+          color: #03a9f4;
+          clip-path: polygon(
+            0% 45%,
+            16% 44%,
+            33% 50%,
+            54% 60%,
+            70% 61%,
+            84% 59%,
+            100% 52%,
+            100% 100%,
+            0% 100%
+          );
+        }
+
+        50% {
+          color: #35b4ef;
+          clip-path: polygon(
+            0% 60%,
+            15% 65%,
+            34% 66%,
+            51% 62%,
+            67% 50%,
+            84% 45%,
+            100% 46%,
+            100% 100%,
+            0% 100%
+          );
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container">
+      <div class="content">
+        <h2>You're&nbsp;Auth'ed</h2>
+        <h2>You're&nbsp;Auth'ed</h2>
+      </div>
+      <div id="message">
+        <span class="grey">into the </span>__REPLACED_PROFILE_NAME_HERE__<span class="grey"> profile for the next </span><span id="countdown">X hours XX mins XX seconds</span>
+        <br />
+        <span class="grey">you can close this window now</span>
+      </div>
+    </div>
+  </body>
+</html>
