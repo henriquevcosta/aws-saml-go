@@ -10,8 +10,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"os/user"
-	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
@@ -19,46 +17,12 @@ import (
 	_ "embed"
 
 	saml2 "github.com/russellhaering/gosaml2"
-	"gopkg.in/ini.v1"
 )
 
 //go:embed files/authed.html
 var htmlSuccess string
 
 var stderrlogger *slog.Logger
-
-type profileConfigs struct {
-	idpCallURI string
-	roleARN    string
-	awsRegion  string
-}
-
-func readConfig(profile string) (profileConfigs, error) {
-
-	// Load the INI file and produce configs
-	usr, _ := user.Current()
-	homeDir := usr.HomeDir
-	configFilePath := filepath.Join(homeDir, ".aws/config") // TODO We might want to handle this more dynamically
-	cfg, err := ini.Load(configFilePath)
-	if err != nil {
-		stderrlogger.Error("Fail to read AWS config file", "error", err)
-	}
-	configs := profileConfigs{
-		roleARN:    "some-role",
-		awsRegion:  "ap-southeast-2",
-		idpCallURI: "https://accounts.google.com/o/saml2/initsso?",
-	}
-
-	// profileName := "qlmgt"
-	// // Get the values from the desired section (e.g., "default")
-	// defaultSection := cfg.Section("default")
-	// baseURL := defaultSection.Key("base_url").String()
-	// clientID := defaultSection.Key("client_id").String()
-	// tenantID := defaultSection.Key("tenant_id").String()
-	_ = cfg
-
-	return configs, nil
-}
 
 func main() {
 	port := *flag.Int("port", 35002, "Port that you have configured in your IDP for the callback (default 35002)")

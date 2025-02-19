@@ -134,6 +134,10 @@ func (auth *AWSAuthenticator) doAuth(samlData SAMLData) (*time.Time, error) {
 	if err != nil {
 		return nil, err
 	}
+	err = storeEntry(auth.AuthOptions.RoleARN, output)
+	if err != nil {
+		return nil, err
+	}
 
 	return output.Credentials.Expiration, nil
 }
