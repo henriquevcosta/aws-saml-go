@@ -24,9 +24,9 @@ func readConfig(profile string) (ProfileConfigs, error) {
 		stderrlogger.Error("Fail to read AWS config file", "error", err)
 	}
 	configs := ProfileConfigs{
-		roleARN:    "arn:aws:iam::113053657575:role/assumed-sec-engineer",
+		roleARN:    "",
 		awsRegion:  "ap-southeast-2",
-		idpCallURI: "https://accounts.google.com/o/saml2/initsso?forceauthn=false&idpid=C01g1l5do&spid=705835944086",
+		idpCallURI: "",
 	}
 	// profileName := "qlmgt"
 	// // Get the values from the desired section (e.g., "default")

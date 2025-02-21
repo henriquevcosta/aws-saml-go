@@ -11,13 +11,14 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
-	saml2 "github.com/russellhaering/gosaml2"
 )
 
 type AuthOptions struct {
 	SessionDuration int64
 	RoleARN         string
 	Region          string
+	ProfileName     string
+	IdpCallURI      string
 }
 
 type CredentialsOutputWriter interface {
@@ -47,13 +48,13 @@ type credentialProcessResponse struct {
 
 type CredentialsProcessOutputWriter struct{}
 
-func (w *CredentialsProcessOutputWriter) WriteOutput(c *sts.AssumeRoleWithSAMLOutput) error {
+func (auth *AWSAuthenticator) writeOutput(c *Credentials) error {
 	forJSON := &credentialProcessResponse{
 		Version:         1,
-		AccessKeyID:     *c.Credentials.AccessKeyId,
-		SecretAccessKey: *c.Credentials.SecretAccessKey,
-		SessionToken:    *c.Credentials.SessionToken,
-		Expiration:      c.Credentials.Expiration,
+		AccessKeyID:     c.AccessKeyID,
+		SecretAccessKey: c.SecretAccessKey,
+		SessionToken:    c.SessionToken,
+		Expiration:      c.Expiration,
 	}
 	jsonOutput, err := json.Marshal(forJSON)
 	if err != nil {
@@ -66,30 +67,72 @@ func (w *CredentialsProcessOutputWriter) WriteOutput(c *sts.AssumeRoleWithSAMLOu
 }
 
 type AWSAuthenticator struct {
-	AuthOptions *AuthOptions
-	Writer      CredentialsOutputWriter
+	AuthOptions       *AuthOptions
+	ServerPort        int
+	UseKeychain       bool
+	CredentialStorage CredentialStorage[Credentials]
 }
 
-type SAMLData struct {
-	EncodedSAMLResponse string
-	AssertionInfo       *saml2.AssertionInfo
+type Credentials struct {
+	// The access key ID that identifies the temporary security credentials.
+	AccessKeyID string `json:"AccessKeyId"`
+
+	// The secret access key that can be used to sign requests.
+	SecretAccessKey string
+
+	// The token that users must pass to the service API to use the temporary credentials.
+	SessionToken string
+
+	// The date on which the current credentials expire.
+	Expiration *time.Time
 }
 
-func (auth *AWSAuthenticator) doAuth(samlData SAMLData) (*time.Time, error) {
-	sessionDuration := samlData.AssertionInfo.Values.Get("https://aws.amazon.com/SAML/Attributes/SessionDuration")
-	sessionDurationSeconds, err := strconv.ParseInt(sessionDuration, 10, 64)
+func (auth *AWSAuthenticator) authenticate() error {
+	// test if cached credentials exist, and if they are still valid
+	c, found, err := auth.CredentialStorage.GetEntry(auth.AuthOptions.ProfileName)
+	if err != nil {
+		return err
+	} else if found {
+		if c.Expiration.After(time.Now()) {
+			stderrlogger.Info("Using credential from cache")
+			auth.writeOutput(c)
+			return nil
+		}
+	}
+	// if not,
+	// read INI to get endpoint info
+
+	// launch the server
+	s := &SAMLEndpoint{
+		SAMLAudience: "urn:amazon:webservices:cli",
+		Handler:      auth,
+		IdpCallURI:   auth.AuthOptions.IdpCallURI,
+		ServerPort:   auth.ServerPort,
+		ProfileName:  auth.AuthOptions.ProfileName,
+	}
+	s.runSAMLFlow()
+	// err := s.startServer()
+	// if err != nil {
+	// 	return err
+	// }
+
+	return nil
+}
+
+func (auth *AWSAuthenticator) handle(samlData SAMLData) (*time.Time, error) {
+	d := samlData.AssertionInfo.Values.Get("https://aws.amazon.com/SAML/Attributes/SessionDuration")
+	sec, err := strconv.ParseInt(d, 10, 64)
 	if err != nil {
 		stderrlogger.Error("Could not parse session duration", "error", err)
 		return nil, err
 	}
 
-	roleDurationSecondsOpt := int64(auth.AuthOptions.SessionDuration)
-	if roleDurationSecondsOpt == 0 {
-		roleDurationSecondsOpt = int64(3600) // 1 hour default
+	opt := int64(auth.AuthOptions.SessionDuration)
+	if opt == 0 {
+		opt = int64(3600) // 1 hour default
 	}
-	if roleDurationSecondsOpt < sessionDurationSeconds {
-		sessionDurationSeconds = roleDurationSecondsOpt
-	}
+
+	sec = min(sec, opt)
 
 	principalARN := ""
 	if roles, foundRoles := samlData.AssertionInfo.Values["https://aws.amazon.com/SAML/Attributes/Role"]; foundRoles {
@@ -118,7 +161,7 @@ func (auth *AWSAuthenticator) doAuth(samlData SAMLData) (*time.Time, error) {
 		RoleArn:         &auth.AuthOptions.RoleARN,
 		PrincipalArn:    &principalARN,
 		SAMLAssertion:   &samlData.EncodedSAMLResponse,
-		DurationSeconds: &sessionDurationSeconds,
+		DurationSeconds: &sec,
 	}
 	stsClient := sts.New(session, aws.NewConfig().WithRegion(auth.AuthOptions.Region))
 
@@ -130,14 +173,21 @@ func (auth *AWSAuthenticator) doAuth(samlData SAMLData) (*time.Time, error) {
 	}
 	stderrlogger.Debug("Session obtained", "output", output)
 
-	err = auth.Writer.WriteOutput(output)
+	c := &Credentials{
+		AccessKeyID:     *output.Credentials.AccessKeyId,
+		SecretAccessKey: *output.Credentials.SecretAccessKey,
+		SessionToken:    *output.Credentials.SessionToken,
+		Expiration:      output.Credentials.Expiration,
+	}
+	err = auth.writeOutput(c)
 	if err != nil {
 		return nil, err
 	}
-	err = storeEntry(auth.AuthOptions.RoleARN, output)
+	err = auth.CredentialStorage.StoreEntry(auth.AuthOptions.ProfileName, c)
+	// err = auth.credentialStorage.StoreEntry(auth.AuthOptions.ProfileName, output)
 	if err != nil {
 		return nil, err
 	}
 
-	return output.Credentials.Expiration, nil
+	return c.Expiration, nil
 }

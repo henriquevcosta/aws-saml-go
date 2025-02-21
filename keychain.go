@@ -3,23 +3,34 @@ package main
 import (
 	"errors"
 
+	b64 "encoding/base64"
+
 	"github.com/keybase/go-keychain"
 	"github.com/vmihailenco/msgpack/v5"
 )
 
 const SERVICE_NAME = "aws-google-go"
 
-func storeEntry[T any](name string, data *T) error {
+type CredentialStorage[T any] interface {
+	StoreEntry(name string, data *T) error
+	GetEntry(name string) (*T, bool, error)
+	DeleteEntry(name string) error
+}
 
+type KeyringStorage[T any] struct{}
+
+func (k *KeyringStorage[T]) StoreEntry(name string, data *T) error {
 	encoded, err := msgpack.Marshal(data)
 	if err != nil {
 		return err
 	}
+	s := b64.StdEncoding.EncodeToString(encoded)
+
 	item := keychain.NewItem()
 	item.SetSecClass(keychain.SecClassGenericPassword)
 	item.SetService(SERVICE_NAME)
 	item.SetAccount(name)
-	item.SetData(encoded)
+	item.SetData([]byte(s))
 	item.SetSynchronizable(keychain.SynchronizableNo)
 	item.SetAccessible(keychain.AccessibleWhenUnlockedThisDeviceOnly)
 	err = keychain.AddItem(item)
@@ -30,7 +41,18 @@ func storeEntry[T any](name string, data *T) error {
 	return err
 }
 
-func getEntry[T any](name string) (*T, bool, error) {
+func (k *KeyringStorage[_]) DeleteEntry(name string) error {
+	item := keychain.NewItem()
+	item.SetSecClass(keychain.SecClassGenericPassword)
+	item.SetService(SERVICE_NAME)
+	item.SetAccount(name)
+	item.SetSynchronizable(keychain.SynchronizableNo)
+	item.SetAccessible(keychain.AccessibleWhenUnlockedThisDeviceOnly)
+	err := keychain.DeleteItem(item)
+	return err
+}
+
+func (k *KeyringStorage[T]) GetEntry(name string) (*T, bool, error) {
 	query := keychain.NewItem()
 	query.SetSecClass(keychain.SecClassGenericPassword)
 	query.SetService("aws-google-go")
@@ -48,7 +70,15 @@ func getEntry[T any](name string) (*T, bool, error) {
 		return nil, false, errors.New("obtained more than one keychain entry for '" + SERVICE_NAME + "', cleanup your keychain")
 	} else {
 		var data T
-		err := msgpack.Unmarshal(results[0].Data, &data)
+		b := results[0].Data
+		l := b64.StdEncoding.DecodedLen(len(b))
+		o := make([]byte, l)
+		rlen, err := b64.StdEncoding.Decode(o, b)
+		if err != nil {
+			return nil, false, err
+		}
+
+		err = msgpack.Unmarshal(o[0:rlen], &data)
 		return &data, true, err
 	}
 }
