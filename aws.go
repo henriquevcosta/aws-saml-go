@@ -14,7 +14,7 @@ import (
 )
 
 type AuthOptions struct {
-	SessionDuration int64
+	SessionDuration int
 	RoleARN         string
 	Region          string
 	ProfileName     string
@@ -69,7 +69,6 @@ func (auth *AWSAuthenticator) writeOutput(c *Credentials) error {
 type AWSAuthenticator struct {
 	AuthOptions       *AuthOptions
 	ServerPort        int
-	UseKeychain       bool
 	CredentialStorage CredentialStorage[Credentials]
 }
 
@@ -132,6 +131,7 @@ func (auth *AWSAuthenticator) handle(samlData SAMLData) (*time.Time, error) {
 		opt = int64(3600) // 1 hour default
 	}
 
+	stderrlogger.Debug("will use lowest value as session duration", "from-idp", sec, "from-config-or-input", opt)
 	sec = min(sec, opt)
 
 	principalARN := ""
@@ -184,7 +184,6 @@ func (auth *AWSAuthenticator) handle(samlData SAMLData) (*time.Time, error) {
 		return nil, err
 	}
 	err = auth.CredentialStorage.StoreEntry(auth.AuthOptions.ProfileName, c)
-	// err = auth.credentialStorage.StoreEntry(auth.AuthOptions.ProfileName, output)
 	if err != nil {
 		return nil, err
 	}

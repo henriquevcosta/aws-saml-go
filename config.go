@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os/user"
 	"path/filepath"
 
@@ -8,34 +9,88 @@ import (
 )
 
 type ProfileConfigs struct {
-	idpCallURI string
-	roleARN    string
-	awsRegion  string
+	IDPCallURI  string
+	RoleARN     string
+	AWSRegion   string
+	DurationSec int
 }
 
-func readConfig(profile string) (ProfileConfigs, error) {
+func ReadConfig(profile string) (*ProfileConfigs, error) {
 
 	// Load the INI file and produce configs
 	usr, _ := user.Current()
 	homeDir := usr.HomeDir
-	configFilePath := filepath.Join(homeDir, ".aws/config") // TODO We might want to handle this more dynamically
+	configFilePath := filepath.Join(homeDir, ".aws/config")
 	cfg, err := ini.Load(configFilePath)
 	if err != nil {
 		stderrlogger.Error("Fail to read AWS config file", "error", err)
 	}
-	configs := ProfileConfigs{
-		roleARN:    "",
-		awsRegion:  "ap-southeast-2",
-		idpCallURI: "",
-	}
-	// profileName := "qlmgt"
-	// // Get the values from the desired section (e.g., "default")
-	// defaultSection := cfg.Section("default")
-	// baseURL := defaultSection.Key("base_url").String()
-	// clientID := defaultSection.Key("client_id").String()
-	// tenantID := defaultSection.Key("tenant_id").String()
-	_ = cfg
-	_ = profile
 
-	return configs, nil
+	def := cfg.Section("default")
+
+	var ps *ini.Section
+	if profile != "" {
+		ps, err = cfg.GetSection("profile " + profile)
+		if err != nil {
+			return nil, fmt.Errorf("no 'profile %s' section found in ~/.aws/config", profile)
+		}
+	} else {
+		// Create a blank section just for processing flexibility
+		ps = cfg.Section("profile " + profile)
+	}
+
+	var idpConf *ini.Section
+	idp, err := getDefaultingToParent("saml.idp_config", ps, nil, def)
+	if err == nil {
+		s := idp.String()
+		idpConf, err = cfg.GetSection("saml_idp " + s)
+		if err != nil {
+			return nil, fmt.Errorf("no 'saml_idp %s' section found in ~/.aws/config (referenced from 'saml.idp_config')", s)
+		}
+	} else {
+		idpConf = nil
+	}
+
+	idpUrl, err := getDefaultingToParent("saml.idp_url", ps, idpConf, def)
+	if err != nil {
+		return nil, err
+	}
+	roleARN, err := getDefaultingToParent("saml.role_arn", ps, idpConf, def)
+	if err != nil {
+		return nil, err
+	}
+	region, err := getDefaultingToParent("region", ps, idpConf, def)
+	if err != nil {
+		return nil, err
+	}
+	duration, err := getDefaultingToParent("saml.duration", ps, idpConf, def)
+	var durationS int
+	if err != nil {
+		durationS = 0
+	} else {
+		durationS = duration.MustInt(0)
+	}
+
+	configs := ProfileConfigs{
+		IDPCallURI:  idpUrl.String(),
+		RoleARN:     roleARN.String(),
+		AWSRegion:   region.String(),
+		DurationSec: durationS,
+	}
+	return &configs, nil
+}
+
+func getDefaultingToParent(k string, s *ini.Section, idp *ini.Section, def *ini.Section) (*ini.Key, error) {
+	if s != nil && s.HasKey(k) {
+		stderrlogger.Debug("found key in aws config", "key", k, "section", s.Name())
+		return s.Key(k), nil
+	} else if idp != nil && idp.HasKey(k) {
+		stderrlogger.Debug("found key in aws config", "key", k, "section", idp.Name())
+		return idp.Key(k), nil
+	} else if def != nil && def.HasKey(k) {
+		stderrlogger.Debug("found key in aws config", "key", k, "section", def.Name())
+		return def.Key(k), nil
+	} else {
+		return nil, fmt.Errorf("configuration '%s' not found", k)
+	}
 }

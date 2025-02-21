@@ -29,5 +29,17 @@
             "-debug"
         ]
     },
+    {
+        "name": "No Cache",
+        "type": "go",
+        "request": "launch",
+        "mode": "auto",
+        "program": "${fileDirname}",
+        "args": [
+            "--cache=none",
+            "--debug",
+            "qlmgt2",
+        ]
+    },
     ]
 }
