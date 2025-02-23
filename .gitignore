@@ -25,3 +25,5 @@ go.work.sum
 .env
 
 aws-google-go
+# Added by goreleaser init:
+dist/
