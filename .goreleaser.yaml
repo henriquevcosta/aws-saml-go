@@ -21,7 +21,8 @@ builds:
       - CGO_ENABLED=1
     goos:
       - darwin
-      - linux
+#      Not working until https://github.com/keybase/keybase-issues/issues/4309
+#      - linux
 
 
 archives:
