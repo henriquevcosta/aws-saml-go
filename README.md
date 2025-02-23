@@ -12,7 +12,7 @@ saml.idp_config=google
 # this is a google SAML example where the SP is configured in the Google Admin console as
 # redirecting back to http://127.0.0.1:35002/
 # IIIIIIIII and SSSSSSSSSS would be your IDP ID and SP ID respectively
-saml.idp_url = https://accounts.google.com/o/saml2/initsso?forceauthn=false&idpid=IIIIIIIII&spid=SSSSSSSSSS
+saml.idp_url = https://accounts.google.com/o/saml2/initsso?idpid=IIIIIIIII&spid=SSSSSSSSSS&forceauthn=false
 saml.duration = 1000
 
 [saml_idp another_idp]
@@ -32,7 +32,7 @@ account = 1111111111
 saml.role_arn = arn:aws:iam::1111111111:role/the-role
 credential_process = /path/to/aws-google-go prof2
 # Inline idp configs
-saml.idp_url = https://accounts.google.com/o/saml2/initsso?forceauthn=false&idpid=IIIIIIIII&spid=SSSSSSSSSS
+saml.idp_url = https://accounts.google.com/o/saml2/initsso?idpid=IIIIIIIII&spid=SSSSSSSSSS&forceauthn=false
 saml.duration = 1000
 
 [profile prof3]
