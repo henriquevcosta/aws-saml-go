@@ -1,11 +1,10 @@
 package main
 
 import (
+	b64 "encoding/base64"
 	"errors"
 
-	b64 "encoding/base64"
-
-	"github.com/keybase/go-keychain"
+	keychain "github.com/keybase/go-keychain"
 	"github.com/vmihailenco/msgpack/v5"
 )
 
