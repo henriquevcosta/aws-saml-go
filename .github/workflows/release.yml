@@ -10,6 +10,7 @@ permissions:
   contents: write
   packages: write
 
+
 jobs:
   goreleaser:
     runs-on: macos-latest
@@ -29,7 +30,7 @@ jobs:
           # either 'goreleaser' (default) or 'goreleaser-pro'
           distribution: goreleaser
           # 'latest', 'nightly', or a semver
-          version: latest
+          version: "~> v2"
           args: release --clean
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

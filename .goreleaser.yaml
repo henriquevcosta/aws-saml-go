@@ -1,0 +1,12 @@
+builds:
+  - main: .
+    id: "aws-saml-go"
+    binary: aws-saml-go
+    goos:
+      - linux
+      - darwin
+# archives:
+#   - files:
+#       - none*
+archives:
+  - format: binary
