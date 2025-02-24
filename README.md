@@ -1,7 +1,13 @@
 # aws-saml-go
-Simple credential_process app that will use your browser session to get a SAML auth for AWS
+Simple credential_process app that will use your browser session to get a SAML auth for AWS.
+Assumes that your IdP is configured to redirect back to `http://127.0.0.1:35002/` after authentication and has only been
+tested with Google's SAML assertions.
 
-Configurations are done via the `~/.aws/config` file.
+Configurations are done via the `~/.aws/config` file. Just place the binary downloaded from 
+the [releases](https://github.com/henriquevcosta/aws-saml-go/releases) on your filesystem
+and adjust the path in the config file.
+
+The IDP-specific configs can be made explicit in a `saml_idp <name>` section of the config and then pointing to it from a `saml.idp_config=<name>` property.
 
 ```ini
 [default]
