@@ -1,5 +1,9 @@
+> [!NOTE]
+> Currently only macOS is supported, linux should come in the near future.
+
 # aws-saml-go
 Simple credential_process app that will use your browser session to get a SAML auth for AWS.
+
 Assumes that your IdP is configured to redirect back to `http://127.0.0.1:35002/` after authentication and has only been
 tested with Google's SAML assertions.
 
@@ -51,3 +55,11 @@ saml.role_arn = arn:aws:iam::1111111111:role/the-role
 credential_process = /path/to/aws-google-go prof3
 
 ```
+
+## Usage
+
+This tool conforms to AWS's `credential_process` format so you can use it in any way that you can use AWS profiles. You can just run `aws s3 ls --profile prof2` or you can use some more sofisticated tools like [Granted](https://www.granted.dev/) or [AWSume](https://awsu.me/general/quickstart.html).
+
+# Credit
+
+A lot of this tool's working and some of the code is inspired from https://github.com/bengieeee/aws-google-saml. I just built this because I wanted a binary that wasn't dependent on Python.
