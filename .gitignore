@@ -24,6 +24,6 @@ go.work.sum
 # env file
 .env
 
-aws-google-go
+aws-saml-go
 # Added by goreleaser init:
 dist/
