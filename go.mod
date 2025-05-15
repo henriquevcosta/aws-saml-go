@@ -1,4 +1,4 @@
-module aws-google-go
+module aws-saml-go
 
 go 1.23.0
 

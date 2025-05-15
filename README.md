@@ -38,13 +38,13 @@ saml.duration = 3000
 # Will inherit the idp config from the default section
 account = 1111111111
 saml.role_arn = arn:aws:iam::1111111111:role/the-role
-credential_process = /path/to/aws-google-go prof1
+credential_process = /path/to/aws-saml-go prof1
 
 [profile prof2]
 region = us-east-2
 account = 1111111111
 saml.role_arn = arn:aws:iam::1111111111:role/the-role
-credential_process = /path/to/aws-google-go prof2
+credential_process = /path/to/aws-saml-go prof2
 # Inline idp configs
 saml.idp_url = https://accounts.google.com/o/saml2/initsso?idpid=IIIIIIIII&spid=SSSSSSSSSS&forceauthn=false
 # Optional
@@ -56,7 +56,7 @@ account = 1111111111
 saml.idp_config=another_idp
 # Overriding the default profile
 saml.role_arn = arn:aws:iam::1111111111:role/the-role
-credential_process = /path/to/aws-google-go prof3
+credential_process = /path/to/aws-saml-go prof3
 # Optional
 saml.duration = 3600
 
@@ -100,7 +100,7 @@ Example:
 [profile prof1]
 account = 1111111111
 saml.role_arn = arn:aws:iam::1111111111:role/the-role
-credential_process = /path/to/aws-google-go --duration 5000 prof1
+credential_process = /path/to/aws-saml-go --duration 5000 prof1
 ```
 
 # Credit

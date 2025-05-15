@@ -8,7 +8,7 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 )
 
-const SERVICE_NAME = "aws-google-go"
+const SERVICE_NAME = "aws-saml-go"
 
 type CredentialStorage[T any] interface {
 	StoreEntry(name string, data *T) error
@@ -54,7 +54,7 @@ func (k *KeyringStorage[_]) DeleteEntry(name string) error {
 func (k *KeyringStorage[T]) GetEntry(name string) (*T, bool, error) {
 	query := keychain.NewItem()
 	query.SetSecClass(keychain.SecClassGenericPassword)
-	query.SetService("aws-google-go")
+	query.SetService("aws-saml-go")
 	query.SetAccount(name)
 	query.SetMatchLimit(keychain.MatchLimitOne)
 	query.SetReturnData(true)
